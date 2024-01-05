@@ -1,0 +1,9 @@
+{
+    "autoload": {
+        "psr-4": {
+            "Database\\": "src/database",
+            "Csv\\": "src/csv",
+            "Commands\\": "src/commands"
+        }
+    }
+}
