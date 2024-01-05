@@ -47,8 +47,13 @@ class UserCommand
     {
         $handle = fopen($csvFile, "r");
         if ($handle !== FALSE) {
-           
+            $headerSkipped = false;
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+
+                if (!$headerSkipped) {
+                    $headerSkipped = true;
+                    continue;
+                }
 
                 $name = strtolower($data[0]);
                 $surname = strtolower($data[1]);
