@@ -1,0 +1,29 @@
+# Ignore composer dependencies
+/vendor/
+
+# Ignore composer generated files
+/composer.phar
+/composer.lock
+
+# Ignore IDE project files
+/.idea/
+/.vscode/
+
+# Ignore log files and directories
+/log/
+/*.log
+
+# Ignore local development environment files
+/.env
+
+# Ignore user-specific files
+/.user.ini
+
+# Ignore database-related files
+/database/
+
+# Ignore PHP build artifacts
+/build/
+
+# Ignore cache and session files
+/var/
