@@ -4,7 +4,7 @@ require_once 'vendor/autoload.php';
 use Database\Connection;
 use Commands\UserCommand;
 
-echo "Script started...";
+echo "Script started...\n";
 $cl_options = getopt("u:p:h:", ["file:", "create_table", "dry_run", "help"]);
 
 
