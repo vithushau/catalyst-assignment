@@ -2,6 +2,7 @@
 
 namespace Commands;
 
+use Exception;
 use mysqli;
 
 class UserCommand
@@ -45,62 +46,74 @@ class UserCommand
 
     private function processCSV($csvFile, $dryRun): void
     {
-        $handle = fopen($csvFile, "r");
-        if ($handle !== FALSE) {
-            $headerSkipped = false;
-            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        try {
+            $handle = fopen($csvFile, "r");
+            if ($handle !== FALSE) {
+                $headerSkipped = false;
+                while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
 
-                if (!$headerSkipped) {
-                    $headerSkipped = true;
-                    continue;
-                }
-
-                $name = ucfirst($data[0]);
-                $surname = ucfirst($data[1]);
-                $email = strtolower($data[2]);
-
-                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    echo "Invalid email: $email\n";
-                    continue;
-                }
-
-                // Check if email exists in the database
-                $checkQuery = "SELECT COUNT(*) as count FROM users WHERE email = ?";
-                $stmt1 = $this->mysqli->prepare($checkQuery);
-                $stmt1->bind_param("s", $email);
-                $stmt1->execute();
-                $result = $stmt1->get_result();
-                $row = $result->fetch_assoc();
-
-                if ($row['count'] != 0) {
-                    echo "Duplicate email found in the database: $email\n";
-                    continue; 
-                }
-
-                $stmt1->close();
-
-                if (!$dryRun) {
-                    // Insert data into database using prepared statement
-                    $sql = "INSERT INTO users (name, surname, email) VALUES (?, ?, ?)";
-
-                    // Prepare the statement
-                    $stmt = $this->mysqli->prepare($sql);
-
-                    // Bind parameters
-                    $stmt->bind_param("sss", $name, $surname, $email);
-
-                    // Execute the statement
-                    if ($stmt->execute()) {
-                        // echo "Record inserted successfully\n";
-                    } else {
-                        echo "Error: " . $stmt->error . "\n";
+                    if (!$headerSkipped) {
+                        $headerSkipped = true;
+                        continue;
                     }
-                    // Close the statement
-                    $stmt->close();
-                }
 
+                    $name = ucfirst($data[0]);
+                    $surname = ucfirst($data[1]);
+                    $email = strtolower($data[2]);
+
+                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        echo "Invalid email: $email\n";
+                        continue;
+                    }
+
+                    // Check if email exists in the database
+                    $checkQuery = "SELECT COUNT(*) as count FROM users WHERE email = ?";
+                    $stmt1 = $this->mysqli->prepare($checkQuery);
+
+                    if (!$stmt1) {
+                        die("Error in SQL query: " . $this->mysqli->error);
+                    }
+                    $stmt1->bind_param("s", $email);
+                    $stmt1->execute();
+                    $result = $stmt1->get_result();
+                    $row = $result->fetch_assoc();
+
+                    if ($row['count'] != 0) {
+                        echo "Duplicate email found in the database: $email\n";
+                        continue;
+                    }
+
+                    $stmt1->close();
+
+                    if (!$dryRun) {
+                        // Insert data into database using prepared statement
+                        $sql = "INSERT INTO users (name, surname, email) VALUES (?, ?, ?)";
+
+                        // Prepare the statement
+                        $stmt = $this->mysqli->prepare($sql);
+
+                        // Bind parameters
+                        $stmt->bind_param("sss", $name, $surname, $email);
+
+                        // Execute the statement
+                        if ($stmt->execute()) {
+                            // echo "Record inserted successfully\n";
+                        } else {
+                            echo "Error: " . $stmt->error . "\n";
+                        }
+                        // Close the statement
+                        $stmt->close();
+                    }
+
+                }
+                fclose($handle);
             }
-            fclose($handle);
+
+        } catch (Exception $e) {
+            // Handle the exception
+            echo "Error: " . $e->getMessage() . "\n";
         }
+
+
     }
 }
