@@ -55,7 +55,8 @@ class UserCommand
         try {
             $handle = fopen($csvFile, "r");
             if ($handle !== FALSE) {
-                $headerSkipped = false;
+                $headerSkipped = FALSE;
+                $fileEmails = [];
 
                 if ($dryRun) {
                     echo "Dry Run Mode - Records Summary:\n";
@@ -106,6 +107,12 @@ class UserCommand
                             echo "Error: " . $stmt->error . "\n";
                         }
                     } else {
+                        // Check if the email is in the array
+                        if (in_array($email, $fileEmails)) {
+                            echo "Duplicate email found in the file: $email\n";
+                            continue;
+                        }
+                        $fileEmails[] = $email;
                         echo "Name: $name, Surname: $surname, Email: $email\n";
                     }
                     $stmt->close();
