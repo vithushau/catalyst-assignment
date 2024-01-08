@@ -13,16 +13,21 @@ if (isset($cli_options['help'])) {
     exit();
 }
 
-// Database connection details
-$host = $cli_options['h'] ?? 'localhost';
-$username = $cli_options['u'] ?? 'root';
-$password = $cli_options['p'] ?? '';
-$database = 'catalyst';
 
-$mysqli = Connection::make($host, $database, $username, $password);
+if (isset($cli_options['u']) && isset($cli_options['p']) && isset($cli_options['h'])) {
 
-$userCommand = new UserCommand($mysqli);
+    // Database connection details
+    $host = $cli_options['h'];
+    $username = $cli_options['u'];
+    $password = $cli_options['p'];
+    $database = 'catalys'; // add your database name
+    $mysqli = Connection::make($host, $database, $username, $password);
 
-$userCommand->execute($cli_options);
+    $userCommand = new UserCommand($mysqli);
+
+    $userCommand->execute($cli_options);
+} else {
+    echo "Error: MySQL username (-u), password (-p), and host (-h) are required when using --file or --create_table.\n";
+}
 
 echo "Script Completed...";

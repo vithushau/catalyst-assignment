@@ -5,6 +5,9 @@ namespace Commands;
 use Exception;
 use mysqli;
 
+// Define the maximum length for fgetcsv
+define('MAX_LINE_LENGTH', 1000);
+
 class UserCommand
 {
     private mysqli $mysqli;
@@ -14,15 +17,15 @@ class UserCommand
         $this->mysqli = $mysqli;
     }
 
-    public function execute(array $cli_options): void
+    public function execute(array $options): void
     {
-        if (isset($cli_options['create_table'])) {
+        if (isset($options['create_table'])) {
             $this->createTable();
             return;
         }
-        if (isset($cli_options['file'])) {
-            $csvFile = $cli_options['file'];
-            $dryRun = isset($cli_options['dry_run']);
+        if (isset($options['file'])) {
+            $csvFile = $options['file'];
+            $dryRun = isset($options['dry_run']);
             $this->processCSV($csvFile, $dryRun);
             return;
         }
@@ -54,7 +57,9 @@ class UserCommand
     {
         try {
             $handle = fopen($csvFile, "r");
-            if ($handle !== FALSE) {
+            if ($handle === FALSE) {
+                echo "The file does not exist or could not be opened.";
+            } else {
                 $headerSkipped = FALSE;
                 $fileEmails = [];
 
@@ -62,7 +67,7 @@ class UserCommand
                     echo "Dry Run Mode - Records Summary:\n";
                 }
 
-                while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                while (($data = fgetcsv($handle, MAX_LINE_LENGTH, ",")) !== FALSE) {
 
                     if (!$headerSkipped) {
                         $headerSkipped = true;
@@ -79,22 +84,19 @@ class UserCommand
                     }
 
                     $checkQuery = "SELECT COUNT(*) as count FROM users WHERE email = ?";
-                    $check_stmt = $this->mysqli->prepare($checkQuery);
-
-                    if (!$check_stmt) {
+                    $checkStmt = $this->mysqli->prepare($checkQuery);
+                    if (!$checkStmt) {
                         die("Error in SQL query: " . $this->mysqli->error);
                     }
-                    $check_stmt->bind_param("s", $email);
-                    $check_stmt->execute();
-                    $result = $check_stmt->get_result();
+                    $checkStmt->bind_param("s", $email);
+                    $checkStmt->execute();
+                    $result = $checkStmt->get_result();
                     $row = $result->fetch_assoc();
-
                     if ($row['count'] != 0) {
                         echo "Duplicate email found in the database: $email\n";
                         continue;
                     }
-
-                    $check_stmt->close();
+                    $checkStmt->close();
 
                     $sql = "INSERT INTO users (name, surname, email) VALUES (?, ?, ?)";
                     $stmt = $this->mysqli->prepare($sql);
@@ -107,7 +109,7 @@ class UserCommand
                             echo "Error: " . $stmt->error . "\n";
                         }
                     } else {
-                        // Check if the email is in the array
+                        // Check if the email is duplicated in the file
                         if (in_array($email, $fileEmails)) {
                             echo "Duplicate email found in the file: $email\n";
                             continue;
